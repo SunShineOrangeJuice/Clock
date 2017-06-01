@@ -1,13 +1,9 @@
 package com.hc.clock;
 
-import android.content.BroadcastReceiver;
 import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Resources;
 import android.graphics.Canvas;
 import android.graphics.drawable.Drawable;
-import android.icu.util.TimeZone;
 import android.os.Handler;
 import android.os.Message;
 import android.text.format.Time;
@@ -115,7 +111,6 @@ public class Clock extends View {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         if (mAttached) {
-            getContext().unregisterReceiver(broadcastReceiver);
             mAttached = false;
         }
     }
@@ -167,21 +162,6 @@ public class Clock extends View {
         Log.e("second", second + "");
     }
 
-    private final BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            //根据时区转换
-            if (intent.getAction().equals(Intent.ACTION_TIMEZONE_CHANGED)) {
-                String tz = intent.getStringExtra("time-zone");
-                mTime = new Time(java.util.TimeZone.getTimeZone(tz).getID());
-            }
-            //更新时间
-            onTimeChanged();
-            //重绘
-            invalidate();
-        }
-    };
-
 
     @Override
     protected void onDraw(Canvas canvas) {
@@ -205,24 +185,14 @@ public class Clock extends View {
         int h = biao.getIntrinsicHeight();
         boolean scaled = false;
 
-        /*如果可用的宽高小于表盘图片的宽高，
-           就要进行缩放，通过坐标系的缩放来实现。
-          这个缩放效果影响是全局的，
-          也就是下面绘制的表盘、时针、分针都会受到缩放的影响。*/
+
         if (availableWidth < w || availableHeight < h) {
             scaled = true;
             float scale = Math.min((float) availableWidth / (float) w, (float) availableHeight / (float) h);
             canvas.save();
             canvas.scale(scale, scale, x, y);
         }
-        /*如果尺寸发生变化，我们要重新为表盘设置Bounds。
-           这里的Bounds就相当于是为Drawable在View中确定位置，
-           只是确定的方式更直接，直接在View中框出一个与Drawable大小
-           相同的矩形，
-           Drawable就在这个矩形里绘制自己。
-           这里框出的矩形，是以(x,y)为中心的，宽高等于表盘图片的宽高的一个矩形，
-           不用担心表盘图片太大绘制不完整，
-            因为我们已经提前进行了缩放了。*/
+
         if (changed) {
             biao.setBounds(x - (w / 2), y - (h / 2), x + (w / 2), y + (h / 2));
         }
